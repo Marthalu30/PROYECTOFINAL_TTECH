@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECOENERGY DApp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            background-color: #121212;
+            color: #FFFFFF;
+            font-family: 'Arial', sans-serif;
+        }
+        .container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #1E1E1E;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .btn-primary {
+            background-color: #1E90FF;
+            color: #FFFFFF;
+        }
+        .btn-secondary {
+            background-color: #32CD32;
+            color: #FFFFFF;
+        }
+        .btn-tertiary {
+            background-color: #FFD700;
+            color: #000000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl mb-4">ECOENERGY DApp</h1>
+        <p class="mb-4">Conecta tu billetera y gestiona tus tokens.</p>
+        <button id="connectButton" class="btn-primary px-4 py-2 rounded mb-4">Conectar MetaMask</button>
+
+        <div id="walletInfo" class="mb-4 hidden">
+            <p><strong>Dirección de la billetera:</strong> <span id="walletAddress"></span></p>
+            <p><strong>Balance de ECOE:</strong> <span id="tokenBalance"></span></p>
+        </div>
+
+        <div class="mb-4">
+            <button id="storeDataButton" class="btn-secondary px-4 py-2 rounded">Almacenar Dato</button>
+            <button id="retrieveDataButton" class="btn-tertiary px-4 py-2 rounded">Consultar Dato</button>
+        </div>
+
+        <div id="dataResult" class="hidden">
+            <p><strong>Dato Almacenado:</strong> <span id="storedData"></span></p>
+        </div>
+    </div>
+
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+    <script>
+        const contractAddress = "0x8c4f2DF9852B149109Ac08D7c0F1d46aE2743bd0";
+        const abi = [
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Approval",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Transfer",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			}
+		],
+		"name": "allowance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalSupply",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "transfer",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "transferFrom",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+];
+        let provider;
+        let signer;
+        let contract;
+
+        async function connectMetaMask() {
+            if (window.ethereum) {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                contract = new ethers.Contract(contractAddress, abi, signer);
+
+                const walletAddress = await signer.getAddress();
+                document.getElementById('walletAddress').innerText = walletAddress;
+                document.getElementById('walletInfo').classList.remove('hidden');
+
+                updateTokenBalance(walletAddress);
+            } else {
+                alert("Por favor, instala MetaMask!");
+            }
+        }
+
+        async function updateTokenBalance(walletAddress) {
+            const balance = await contract.balanceOf(walletAddress);
+            document.getElementById('tokenBalance').innerText = ethers.utils.formatEther(balance);
+        }
+
+        async function storeData() {
+            try {
+                const tx = await contract.storeData("Tu Dato Aquí");
+                await tx.wait();
+                alert("Dato almacenado exitosamente.");
+            } catch (error) {
+                console.error(error);
+                alert("Error al almacenar el dato.");
+            }
+        }
+
+        async function retrieveData() {
+            try {
+                const storedData = await contract.retrieveData();
+                document.getElementById('storedData').innerText = storedData;
+                document.getElementById('dataResult').classList.remove('hidden');
+            } catch (error) {
+                console.error(error);
+                alert("Error al consultar el dato.");
+            }
+        }
+
+        document.getElementById('connectButton').addEventListener('click', connectMetaMask);
+        document.getElementById('storeDataButton').addEventListener('click', storeData);
+        document.getElementById('retrieveDataButton').addEventListener('click', retrieveData);
+    </script>
+</body>
+</html>

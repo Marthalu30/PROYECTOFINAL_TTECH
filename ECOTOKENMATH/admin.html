@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ECOMATH Token Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white font-sans">
+
+    <div class="container mx-auto flex flex-col items-center justify-center min-h-screen px-4">
+        <h1 class="text-3xl font-bold mb-8">ECOMATH Token Management</h1>
+        
+        <div class="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md text-center">
+            <button id="connectWallet" class="bg-green-500 text-white font-bold py-2 px-4 rounded mb-4 w-full">
+                Connect Wallet
+            </button>
+            <div id="walletInfo" class="hidden">
+                <p class="mb-4">Connected Account: <span id="account" class="font-mono"></span></p>
+                <p class="mb-4">Token Balance: <span id="balance" class="font-mono"></span> ECOMATH</p>
+                <p class="mb-8">Total Supply: <span id="totalSupply" class="font-mono"></span> ECOMATH</p>
+                
+                <input type="number" id="purchaseAmount" placeholder="Amount to Buy" class="bg-gray-700 text-white py-2 px-4 rounded mb-4 w-full">
+                <button id="buyTokens" class="bg-pink-500 text-white font-bold py-2 px-4 rounded mb-4 w-full">
+                    Buy Tokens
+                </button>
+
+                <div class="flex flex-col space-y-4">
+                    <input type="text" id="recipient" placeholder="Recipient Address" class="bg-gray-700 text-white py-2 px-4 rounded">
+                    <input type="number" id="amount" placeholder="Amount" class="bg-gray-700 text-white py-2 px-4 rounded">
+                    <button id="transferTokens" class="bg-gray-500 text-white font-bold py-2 px-4 rounded">
+                        Transfer Tokens
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const contractAddress = "0x5368536AC6da143a9505E1E85eA3257356e0e752";
+        const contractABI =[
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Approval",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Transfer",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "admin",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			}
+		],
+		"name": "allowance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "buyEnergytokens",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "decimals",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "name",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "newPrice",
+				"type": "uint256"
+			}
+		],
+		"name": "setTokenPrice",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "symbol",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "tokenPrice",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalSupply",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "transfer",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "transferFrom",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	}
+];
+
+        let provider;
+        let signer;
+        let contract;
+
+        document.getElementById('connectWallet').addEventListener('click', async () => {
+            if (typeof window.ethereum !== 'undefined') {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                const account = await signer.getAddress();
+                document.getElementById('account').textContent = account;
+                contract = new ethers.Contract(contractAddress, contractABI, signer);
+                updateBalance();
+                updateTotalSupply();
+                document.getElementById('walletInfo').classList.remove('hidden');
+            } else {
+                alert('Please install MetaMask!');
+            }
+        });
+
+        async function updateBalance() {
+            const balance = await contract.balanceOf(await signer.getAddress());
+            const decimals = await contract.decimals();
+            document.getElementById('balance').textContent = ethers.utils.formatUnits(balance, decimals);
+        }
+
+        async function updateTotalSupply() {
+            const totalSupply = await contract.totalSupply();
+            const decimals = await contract.decimals();
+            document.getElementById('totalSupply').textContent = ethers.utils.formatUnits(totalSupply, decimals);
+        }
+
+        document.getElementById('buyTokens').addEventListener('click', async () => {
+            const purchaseAmount = document.getElementById('purchaseAmount').value;
+            const tokenPrice = await contract.tokenPrice();
+            const totalCost = ethers.BigNumber.from(tokenPrice).mul(purchaseAmount);
+            const tx = await contract.buyEnergytokens({ value: totalCost });
+            await tx.wait();
+            updateBalance();
+            alert('Tokens purchased successfully!');
+        });
+
+        document.getElementById('transferTokens').addEventListener('click', async () => {
+            const recipient = document.getElementById('recipient').value;
+            const amount = document.getElementById('amount').value;
+            const decimals = await contract.decimals();
+            const amountInWei = ethers.utils.parseUnits(amount, decimals);
+            const tx = await contract.transfer(recipient, amountInWei);
+            await tx.wait();
+            updateBalance();
+            alert('Tokens transferred successfully!');
+        });
+    </script>
+</body>
+</html>

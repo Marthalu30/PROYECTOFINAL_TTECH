@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Panel</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f0f0f0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background-color: #fff;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+      max-width: 400px;
+    }
+
+    h1 {
+      color: #333;
+    }
+
+    button {
+      padding: 15px 30px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .red-button {
+      background-color: #f00;
+      color: #fff;
+    }
+
+    .black-button {
+      background-color: #000;
+      color: #fff;
+    }
+
+    #transactionHistory {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Admin Panel</h1>
+
+    <p>Delete current text:</p>
+    <button class="red-button" onclick="deleteText()">Delete</button>
+
+    <p>Transaction History:</p>
+    <div id="transactionHistory"></div>
+
+    <p>Update Contract:</p>
+    <button class="black-button" onclick="updateContract()">Update Contract</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+  <script>
+    const contractAddress = "0xa25446f6F1d6f8098Afdd28C6BF24e9F4F9b8336";
+    const abi = [
+      // ... (same ABI as before)
+    ];
+
+    const web3 = new Web3(window.ethereum);
+
+    async function deleteText() {
+      const accounts = await web3.eth.requestAccounts();
+      const contract = new web3.eth.Contract(abi, contractAddress);
+
+      try {
+        await contract.methods.eliminarTexto().send({ from: accounts[0] });
+        alert("Text deleted successfully!");
+      } catch (error) {
+        console.error(error);
+        alert("An error occurred while deleting the text.");
+      }
+    }
+
+    async function loadTransactionHistory() {
+      const contract = new web3.eth.Contract(abi, contractAddress);
+
+      try {
+        const transactionHistory = await contract.getPastEvents('allEvents', { fromBlock: 0 });
+        transactionHistory.forEach(event => {
+          // Process and display the transaction data
+          console.log(event);
+        });
+      } catch (error) {
+        console.error(error);
+        alert("An error occurred while loading the transaction history.");
+      }
+    }
+
+    async function updateContract() {
+      // Code to update the contract (e.g., redeploy with a new version)
+      alert("Contract update is not implemented yet.");
+    }
+
+    window.addEventListener('load', async () => {
+      await web3.eth.requestAccounts();
+      loadTransactionHistory();
+    });
+  </script>
+</body>
+</html>
