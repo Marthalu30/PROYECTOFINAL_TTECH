@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interfaz de Datos</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.2.7/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1a202c; /* Fondo oscuro */
+            color: #ffffff; /* Texto blanco */
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 2rem;
+            background-color: #2d3748; /* Fondo gris oscuro */
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+        .btn-primary {
+            background-color: #3182ce; /* Azul */
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background-color: #2b6cb0; /* Azul oscuro */
+        }
+        .btn-secondary {
+            background-color: #48bb78; /* Verde */
+            color: #ffffff;
+        }
+        .btn-secondary:hover {
+            background-color: #38a169; /* Verde oscuro */
+        }
+        .btn-tertiary {
+            background-color: #f6e05e; /* Amarillo */
+            color: #000000;
+        }
+        .btn-tertiary:hover {
+            background-color: #ecc94b; /* Amarillo oscuro */
+        }
+        .icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container text-center">
+        <h1 class="text-4xl font-bold mb-6">Interfaz de Datos</h1>
+        
+        <button id="connectButton" class="btn-primary px-6 py-3 rounded flex items-center justify-center mx-auto mb-6">
+            <img src="https://img.icons8.com/ios-filled/50/ffffff/ethereum.png" class="icon" alt="MetaMask">
+            Conectar MetaMask
+        </button>
+        
+        <div id="userSection" class="hidden">
+            <p id="walletAddress" class="mb-4 text-lg"></p>
+            <p id="totalTokens" class="mb-6 text-lg font-semibold"></p>
+
+            <div class="mb-6">
+                <input id="dataInput" type="text" class="p-2 w-full rounded bg-gray-700 border border-gray-600 text-white" placeholder="Ingrese dato a almacenar">
+                <button id="storeButton" class="btn-primary px-6 py-3 rounded mt-4 flex items-center justify-center mx-auto">
+                    <img src="https://img.icons8.com/ios-filled/50/ffffff/save.png" class="icon" alt="Almacenar">
+                    Almacenar Dato
+                </button>
+            </div>
+
+            <button id="fetchButton" class="btn-secondary px-6 py-3 rounded flex items-center justify-center mx-auto">
+                <img src="https://img.icons8.com/ios-filled/50/ffffff/search.png" class="icon" alt="Consultar">
+                Consultar Dato
+            </button>
+            <p id="dataOutput" class="mt-6 text-lg font-semibold"></p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.0/dist/ethers.min.js"></script>
+    <script>
+        const contractAddress = '0xa0Eb1b382dB0679567f35a123476CA893A27A9D3';
+        const contractABI = [
+            "function storeData(string calldata data) external",
+            "function fetchData() external view returns (string memory)",
+            "function totalSupply() external view returns (uint256)",
+            "function tokenPrice() external view returns (uint256)",
+            "function pizzaPrice() external view returns (uint256)"
+        ];
+
+        let provider;
+        let signer;
+        let contract;
+
+        document.getElementById('connectButton').addEventListener('click', async () => {
+            if (window.ethereum) {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                await provider.send('eth_requestAccounts', []);
+                signer = provider.getSigner();
+                contract = new ethers.Contract(contractAddress, contractABI, signer);
+
+                const address = await signer.getAddress();
+                document.getElementById('walletAddress').innerText = `Dirección: ${address}`;
+                document.getElementById('userSection').classList.remove('hidden');
+                updateTotalSupply();
+            } else {
+                alert('MetaMask no está instalado.');
+            }
+        });
+
+        document.getElementById('storeButton').addEventListener('click', async () => {
+            const data = document.getElementById('dataInput').value;
+            if (data) {
+                try {
+                    const tx = await contract.storeData(data);
+                    await tx.wait();
+                    alert('Dato almacenado con éxito.');
+                } catch (error) {
+                    console.error(error);
+                    alert('Error al almacenar el dato.');
+                }
+            } else {
+                alert('Ingrese un dato.');
+            }
+        });
+
+        document.getElementById('fetchButton').addEventListener('click', async () => {
+            try {
+                const data = await contract.fetchData();
+                document.getElementById('dataOutput').innerText = `Dato almacenado: ${data}`;
+            } catch (error) {
+                console.error(error);
+                alert('Error al consultar el dato.');
+            }
+        });
+
+        async function updateTotalSupply() {
+            try {
+                const totalSupply = await contract.totalSupply();
+                document.getElementById('totalTokens').innerText = `Total de Tokens en Circulación: ${ethers.utils.formatUnits(totalSupply, 18)}`;
+            } catch (error) {
+                console.error(error);
+                alert('Error al obtener el suministro total.');
+            }
+        }
+    </script>
+</body>
+</html>

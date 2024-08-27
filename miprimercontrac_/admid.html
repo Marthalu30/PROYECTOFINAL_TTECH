@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interfaz de Datos - Conectar MetaMask</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+    <div class="max-w-md w-full space-y-6 text-center">
+        <h1 class="text-3xl font-bold mb-8">Interfaz de Datos</h1>
+
+        <!-- Botón para conectar MetaMask -->
+        <button id="connectButton" class="bg-pink-500 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded w-full">
+            Conectar MetaMask
+        </button>
+
+        <!-- Sección para mostrar el texto almacenado -->
+        <div id="textoAlmacenado" class="mt-6">
+            <h2 class="text-2xl font-semibold">Texto Almacenado</h2>
+            <p id="textoConsultado" class="mt-2 text-lg"></p>
+        </div>
+
+        <!-- Botón para consultar texto -->
+        <button id="consultarButton" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded w-full">
+            Consultar Texto
+        </button>
+
+        <!-- Campo y botón para almacenar texto -->
+        <div class="mt-6">
+            <input id="inputTexto" type="text" placeholder="Ingresa el texto" class="w-full p-2 mb-4 text-gray-900 rounded" />
+            <button id="almacenarButton" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded w-full">
+                Almacenar Texto
+            </button>
+        </div>
+
+        <!-- Sección para mostrar el total de tokens en circulación -->
+        <div id="totalTokens" class="mt-6">
+            <h2 class="text-2xl font-semibold">Total de Tokens en Circulación</h2>
+            <p id="tokensConsultados" class="mt-2 text-lg"></p>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        let signer;
+        let contrato;
+
+        const abi = [
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "nuevoTexto",
+				"type": "string"
+			}
+		],
+		"name": "almacenarTexto",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "textoAntiguo",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "textoNuevo",
+				"type": "string"
+			}
+		],
+		"name": "TextoActualizado",
+		"type": "event"
+	},
+	{
+		"inputs": [],
+		"name": "consultarTexto",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "propietario",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
+        const direccionContrato = "0xf59b9A282527b7Debef95B228dE37711456eE047";
+
+        async function conectarMetaMask() {
+            if (typeof window.ethereum !== "undefined") {
+                await ethereum.request({ method: "eth_requestAccounts" });
+                const provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+                contrato = new ethers.Contract(direccionContrato, abi, signer);
+                alert("Billetera conectada");
+            } else {
+                alert("MetaMask no está instalado");
+            }
+        }
+
+        async function consultarTexto() {
+            if (contrato) {
+                const texto = await contrato.consultarTexto();
+                document.getElementById("textoConsultado").innerText = texto;
+            }
+        }
+
+        async function almacenarTexto() {
+            if (contrato) {
+                const nuevoTexto = document.getElementById("inputTexto").value;
+                const transaccion = await contrato.almacenarTexto(nuevoTexto);
+                await transaccion.wait();
+                alert("Texto almacenado con éxito");
+                consultarTexto();
+            }
+        }
+
+        async function consultarTotalTokens() {
+            if (contrato) {
+                // Supón que hay una función en el contrato que devuelve el total de tokens
+                const totalTokens = await contrato.totalTokens(); 
+                document.getElementById("tokensConsultados").innerText = totalTokens.toString();
+            }
+        }
+
+        document.getElementById("connectButton").onclick = conectarMetaMask;
+        document.getElementById("consultarButton").onclick = consultarTexto;
+        document.getElementById("almacenarButton").onclick = almacenarTexto;
+        consultarTotalTokens();
+    </script>
+</body>
+</html>
