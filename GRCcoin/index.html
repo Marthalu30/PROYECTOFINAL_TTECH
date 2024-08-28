@@ -1,119 +1,539 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GRCC Color Pizza - Token Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Contrato de Pizza Token</title>
     <style>
-        /* Fondo moderno y futurista */
         body {
-            background: linear-gradient(135deg, #1f2937, #111827);
-            font-family: 'Inter', sans-serif;
+            font-family: Arial, sans-serif;
+            background-color: black;
             color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
         }
 
-        /* Cuadrado gris claro en el centro */
-        .card {
-            background-color: #d1d5db;
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        .container {
+            background-color: #222;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
         }
 
-        /* Colores de los botones */
-        .btn-primary {
-            background-color: #8b5cf6;
+        button {
+            background-color: fuchsia;
             color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
         }
 
-        .btn-secondary {
-            background-color: #ec4899;
-            color: white;
+        button:disabled {
+            opacity: 0.5;
+            cursor: default;
         }
 
-        .btn-tertiary {
-            background-color: #3b82f6;
-            color: white;
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-    <div class="flex items-center justify-center min-h-screen">
-        <div class="card max-w-md mx-auto text-center">
-            <h1 class="text-2xl font-bold mb-6">GRCC Color Pizza - Token Management</h1>
+    <div class="container">
+        <h1>🍕 Pizza Token 🍕</h1>
+        <p>Conectado con la cuenta: <span id="accountAddress">-</span></p>
+        <button onclick="connectWallet()">Conectar Billetera</button>
+        <br>
+        <p>Saldo de tokens: <span id="tokenBalance">0</span></p>
 
-            <div class="mb-4">
-                <button id="connectButton" class="btn-primary py-2 px-4 rounded mb-2">Connect Wallet</button>
-                <div id="accountAddress" class="text-sm mt-2"></div>
-            </div>
+        <h2>Transferir Tokens</h2>
+        <input type="text" id="recipientAddress" placeholder="Dirección del destinatario">
+        <br>
+        <input type="number" id="transferAmount" placeholder="Cantidad de tokens">
+        <br>
+        <button onclick="transferTokens()" id="transferButton" disabled>Transferir</button>
 
-            <div class="mb-4">
-                <button id="balanceButton" class="btn-secondary py-2 px-4 rounded mb-2">Check Token Balance</button>
-                <div id="balance" class="text-sm mt-2"></div>
-            </div>
+        <hr>
 
-            <div class="mb-4">
-                <button id="buyButton" class="btn-tertiary py-2 px-4 rounded mb-2">Buy Pizza (Get Tokens)</button>
-            </div>
-
-            <div class="mb-4">
-                <input type="text" id="recipientAddress" placeholder="Recipient Address" class="text-black py-2 px-4 rounded mb-2 w-full">
-                <input type="number" id="amount" placeholder="Amount" class="text-black py-2 px-4 rounded mb-2 w-full">
-                <button id="transferButton" class="btn-primary py-2 px-4 rounded mb-2">Transfer Tokens</button>
-            </div>
-
-            <div class="mb-4">
-                <button id="totalSupplyButton" class="btn-secondary py-2 px-4 rounded mb-2">Total Tokens in Circulation</button>
-                <div id="totalSupply" class="text-sm mt-2"></div>
-            </div>
-        </div>
+        <h2>Comprar Pizza</h2>
+        <p>Precio de la Pizza: <span id="pizzaPrice">0</span> ETH</p>
+        <button onclick="buyPizza()" id="buyButton" disabled>Comprar Pizza</button>
     </div>
 
-    <script src="https://cdn.ethers.io/lib/ethers-5.2.esm.min.js"></script>
+    <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js"></script>
     <script>
-        const contractAddress = "0xdA66cbfe319C5db830B661df34D219AD3dEF7Fb2";
-        const abi = [/* ABI */];
+        const contractAddress = '0xb1f9875420899BE6d9BE1fE338F17D129d34003a'; // Dirección del contrato
+        const abi = [
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Approval",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "burn",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "buyPizza",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "mint",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "pause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "buyer",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "etherSpent",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "tokensReceived",
+				"type": "uint256"
+			}
+		],
+		"name": "PizzaBought",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "newPrice",
+				"type": "uint256"
+			}
+		],
+		"name": "setPizzaPrice",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "newPrice",
+				"type": "uint256"
+			}
+		],
+		"name": "setTokenPrice",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "transfer",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Transfer",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "sender",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "transferFrom",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "unpause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "withdrawFunds",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "admin",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			}
+		],
+		"name": "allowance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "decimals",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "name",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "paused",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "pizzaPrice",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "symbol",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "tokenPrice",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalSupply",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]; // ABI del contrato
 
         let provider;
         let signer;
         let contract;
 
-        document.getElementById("connectButton").addEventListener("click", async () => {
-            if (typeof window.ethereum !== "undefined") {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = provider.getSigner();
-                contract = new ethers.Contract(contractAddress, abi, signer);
-                const accountAddress = await signer.getAddress();
-                document.getElementById("accountAddress").innerText = `Connected: ${accountAddress}`;
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    // Solicitar acceso a la cuenta
+                    await window.ethereum.request({ method: 'eth_requestAccounts' });
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    signer = provider.getSigner();
+                    contract = new ethers.Contract(contractAddress, abi, signer);
+
+                    // Actualizar la interfaz con la dirección de la cuenta
+                    const account = await signer.getAddress();
+                    document.getElementById('accountAddress').textContent = account;
+
+                    // Habilitar botones
+                    document.getElementById('transferButton').disabled = false;
+                    document.getElementById('buyButton').disabled = false;
+
+                    // Obtener y mostrar el saldo de tokens del usuario
+                    await updateTokenBalance();
+                    await getPizzaPrice();
+                } catch (error) {
+                    alert("Error al conectar la billetera: " + error.message);
+                }
             } else {
-                alert("0x2F118Bbe89cA09a94EB83986EbBc4b532d9c1f0E);
+                alert("Por favor, instala MetaMask para usar esta aplicación.");
             }
-        });
+        }
 
-        document.getElementById("balanceButton").addEventListener("click", async () => {
-            const balance = await contract.balanceOf(await signer.getAddress());
-            document.getElementById("balance").innerText = `Balance: ${ethers.utils.formatUnits(balance, 18)} GRCC`;
-        });
+        async function updateTokenBalance() {
+            const account = await signer.getAddress();
+            const balance = await contract.balanceOf(account);
+            document.getElementById('tokenBalance').textContent = ethers.utils.formatEther(balance);
+        }
 
-        document.getElementById("buyButton").addEventListener("click", async () => {
-            const tx = await contract.ComprarPizza({ value: ethers.utils.parseEther("0.5") });
-            await tx.wait();
-            alert("Pizza bought and tokens received!");
-        });
+        async function transferTokens() {
+            const recipient = document.getElementById('recipientAddress').value;
+            const amount = ethers.utils.parseEther(document.getElementById('transferAmount').value);
 
-        document.getElementById("transferButton").addEventListener("click", async () => {
-            const recipient = document.getElementById("recipientAddress").value;
-            const amount = document.getElementById("amount").value;
-            const tx = await contract.transfer(recipient, ethers.utils.parseUnits(amount, 18));
-            await tx.wait();
-            alert("Tokens transferred!");
-        });
+            try {
+                const tx = await contract.transfer(recipient, amount);
+                await tx.wait();
+                alert("Tokens transferidos con éxito.");
+                await updateTokenBalance();
+            } catch (error) {
+                alert("Error al transferir tokens: " + error.message);
+            }
+        }
 
-        document.getElementById("totalSupplyButton").addEventListener("click", async () => {
-            const totalSupply = await contract.totalencirculacion();
-            document.getElementById("totalSupply").innerText = `Total Supply: ${ethers.utils.formatUnits(totalSupply, 18)} GRCC`;
+        async function buyPizza() {
+            try {
+                const tx = await contract.buyPizza({ value: ethers.utils.parseEther(document.getElementById('pizzaPrice').textContent) });
+                await tx.wait();
+                alert("Pizza comprada con éxito. ¡Buen provecho!");
+                await updateTokenBalance();
+            } catch (error) {
+                alert("Error al comprar Pizza: " + error.message);
+            }
+        }
+
+        async function getPizzaPrice() {
+            const price = await contract.pizzaPrice();
+            document.getElementById('pizzaPrice').textContent = ethers.utils.formatEther(price);
+        }
+
+        // Actualizar el precio de la Pizza al cargar la página
+        window.addEventListener('load', async () => {
+            if (window.ethereum) {
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                contract = new ethers.Contract(contractAddress, abi, provider);
+                await getPizzaPrice();
+            }
         });
     </script>
 </body>
